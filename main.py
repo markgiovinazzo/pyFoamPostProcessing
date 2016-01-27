@@ -26,9 +26,6 @@ from PyFoam.RunDictionary.SolutionFile import SolutionFile
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 from PyFoam.RunDictionary.ParameterFile import ParameterFile
 
-
-import json
-
 # define a probe class for easier handling of multiple probes
 class Probe:
 
@@ -183,22 +180,48 @@ def compareProbes(probe1,probe2):
     # print 'Test length of shorter array is ', len(U1[0][:])
     # print 'Altered length of longer array is ', len(U2[0][:])
     # print U1[0][:]
-    dUx = np.zeros(L)
+
+    # get relative difference between two probes
     dUx = 100*(np.mean(U1[0][:]) - np.mean(U2[0][:]))/np.mean(U1[0][:])
     dUy = 100*(np.mean(U1[1][:]) - np.mean(U2[1][:]))/np.mean(U1[1][:])
     dUz = 100*(np.mean(U1[2][:]) - np.mean(U2[2][:]))#/np.mean(U1[2][:])
 
+    # calculate the tke at this point and it's relative difference
+    uPrime2_1 = np.square(U1[0] - np.mean(U1[0][:]))
+    vPrime2_1 = np.square(U1[1] - np.mean(U1[1][:]))
+    uPrime2_2 = np.square(U2[0] - np.mean(U2[0][:]))
+    vPrime2_2 = np.square(U2[1] - np.mean(U2[1][:]))
+    # wPrime2_1 = U1[1] - np.mean(U1[2][:]) # won't need this when 2-D
+    # wPrime2_2 = U2[1] - np.mean(U2[2][:]) # won't need this when 2-D
+
+    tke1 = 0.5*(np.mean(uPrime2_1) + np.mean(vPrime2_1))
+    tke2 = 0.5*(np.mean(uPrime2_2) + np.mean(vPrime2_2))
+    tke_diff = (tke1 - tke2) / tke1
     mean_diff = (dUx, dUy, dUz)
 
-    print 'At, ', probe1.location, ', relative difference average: ', np.around(mean_diff,3)
+    print 'At, ', probe1.location, ', relative difference in the average is: ', np.around(mean_diff,3)
+    print 'At, ', probe1.location, ', relative difference in the average is: ', np.around(tke_diff,3)
+    # return np.around(mean_diff,3)
 
-    return np.around(mean_diff,3)
+# compare two fields of the same mesh
+def compareFields(ppf1, ppf2):
 
-    # f = open('probeDifferenceTest', 'w+')
-    # json.dump(dUx.tolist(),f)
-    # # json.dump(dUz.tolist(),f)
-    # # json.dump(dUy.tolist(),f)
-    # f.close()
+    ppf = ppf1  # make a copy of the first ParsedParameterFile to make changes
+    iF1 = str(ppf1["internalField"]).split()
+    iF2 = str(ppf2["internalField"]).split()
+    outlet1 = str(ppf1["boundaryField"]["outlet"]["value"]).split()
+    outlet2 = str(ppf2["boundaryField"]["outlet"]["value"]).split()
+                    # self.Ux[j] = float(raw[i][1 + offset][1:])
+
+    # process the internal field
+    for i in ppf["internalField"]:
+
+        u2 = iF2[i]
+
+
+    return ppf
+
+
 
 ###################
 #       MAIN
@@ -207,39 +230,45 @@ def compareProbes(probe1,probe2):
 # TODO: add subsetter for multiple probes in 1 file
 # TODO: proper openfoam file reader?
 # load in probe
-path = '/Users/Mark/Documents/Data/testCaseValidationRe100_nOrtho0/postProcessing/'
+fname = '/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/500/Umean'
+
+# probe1_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 2)
+# probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 2)
+# compareProbes(probe1_1, probe2_1)
+
+print "Parsing: "+fname
+
+f=ParsedParameterFile(fname)
+
+print "\nHeader:"
+print f.header
+
+fid = open('testFile','w+')
+
+for i in f["internalField"]:
+    val = i#f["internalField"][i]
+    fid.write(str(val))
+    fid.write("\n")
+fid.close()
 
 
-probe1_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 2)
-probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 2)
-compareProbes(probe1_1, probe2_1)
-
-
-# fname='/Users/Mark/Documents/Data/testCaseValidationRe100_nOrtho0/500/Umean' #sys.argv[
-# path = '/Users/Mark/Documents/Data/testCaseValidationRe100_nOrtho0/500/'
-# file='/Users/Mark/Documents/Data/testCaseValidationRe100_nOrtho0/500/'
-# name='/Users/Mark/Documents/Data/testCaseValidationRe100_nOrtho0/500/Umean'
-# #
-# # print "Parsing: "+fname
-# #
-# f=ParsedParameterFile(fname)
-#
-# print "\nHeader:"
-# print f.header
-#
-#
-# for i in range(50):
-#     print 'INTERNAL ',  f["internalField"][i]
-#
-# for b in f["boundaryField"]:
-#     print 'BOUNDARY VALUE:', b
-#     test = f["boundaryField"][b]
-#
-#
+# fid = open('boundaryTest','w+')
+# patches = {"topWall","bottomWall","outlet","inlet"}
+# for a in range(len(patches)):
+#     print type(a)
+#     for b in f["boundaryField"][patches[a]]["value"]:
+#         val = b
+#         fid.write(str(a))
+#         fid.write(str(b))
+#         fid.write("\n")
+        # test = f["boundaryField"][b]
+# fid.write('OUTLET')
+# for b in f["boundaryField"]["outlet"]["value"]:
+#     val = b
+#     fid.write(str(b))
+#     fid.write("\n")
 # vals = f.getValueDict()
 #
-# temp = ParsedBoundaryDict(f)
-
 # b = vals.get('boundaryField')["topWall"]
 # print b
 # temp = str(b)
@@ -248,8 +277,11 @@ compareProbes(probe1_1, probe2_1)
 # print bvals
 # for l in range(3):
 #     print bvals[l]
-
+#
 # print foo
+
+
+
 
 # temp = f.getValueDict()
 # test=temp.has_key('internalField')

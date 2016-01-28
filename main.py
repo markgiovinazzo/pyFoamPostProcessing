@@ -112,19 +112,21 @@ def getFFT(probe, type, show):
     L = probe.L
     dataBar = None
     dataPrime = None
+    tStable = 250000
+
     if type == 'force':
-        dataBar = np.mean(probe.Cl)
-        dataPrime = probe.Cl - dataBar
+        dataBar = np.mean(probe.Cl[tStable:])
+        dataPrime = probe.Cl[tStable:] - dataBar
     elif type == 'Ux':
-        dataBar = np.mean(probe.Ux)
-        dataPrime = probe.Ux - dataBar
+        dataBar = np.mean(probe.Ux[tStable:])
+        dataPrime = probe.Ux[tStable:] - dataBar
     elif type == 'Uy':
         dataBar = np.mean(probe.Uy)
         dataPrime = probe.Uy - dataBar
     else:
         print 'Type ' + type + ' is either invalid or not yet implemented'
         exit(-1)
-    Z = np.fft.fft(dataPrime, L)
+    Z = np.fft.fft(dataPrime, L-tStable)
     Q = abs(Z)/probe.L
     halfQ = Q[0:L/2-1]
     dF = fs/L
@@ -196,7 +198,7 @@ def compareProbes(probe1,probe2):
 
     tke1 = 0.5*(np.mean(uPrime2_1) + np.mean(vPrime2_1))
     tke2 = 0.5*(np.mean(uPrime2_2) + np.mean(vPrime2_2))
-    tke_diff = (tke1 - tke2) / tke1
+    tke_diff = 100*(tke1 - tke2) / tke1
     mean_diff = (dUx, dUy, dUz)
 
     print 'At, ', probe1.location, ', relative difference in the average is: ', np.around(mean_diff,3)
@@ -232,25 +234,50 @@ def compareFields(ppf1, ppf2):
 # load in probe
 fname = '/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/500/Umean'
 
-# probe1_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 2)
-# probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 2)
+# probe1_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 0)
+probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 0)
+# probe1_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 1)
+# probe2_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 1)
+# probe1_3 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 2)
+# probe2_3 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 2)
+# probe12_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes2/60/U', 'velocity', 0)
+# probe22_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes2/10/U', 'velocity', 0)
+# probe12_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes2/60/U', 'velocity', 1)
+# probe22_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes2/10/U', 'velocity', 1)
+# probe12_3 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes2/60/U', 'velocity', 2)
+# probe22_3 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes2/10/U', 'velocity', 2)
+# probe13_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes3/60/U', 'velocity', 0)
+# probe23_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes3/10/U', 'velocity', 0)
+# probe13_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes3/60/U', 'velocity', 1)
+# probe23_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes3/10/U', 'velocity', 1)
+
 # compareProbes(probe1_1, probe2_1)
+# compareProbes(probe1_2, probe2_2)
+# compareProbes(probe1_3, probe2_3)
+# compareProbes(probe12_1, probe22_1)
+# compareProbes(probe12_2, probe22_2)
+# compareProbes(probe12_3, probe22_3)
+# compareProbes(probe13_1, probe23_1)
+# compareProbes(probe13_2, probe23_2)
 
-print "Parsing: "+fname
 
-f=ParsedParameterFile(fname)
+getFFT(probe2_1,'Ux',False)
 
-print "\nHeader:"
-print f.header
-
-fid = open('testFile','w+')
-
-for i in f["internalField"]:
-    val = i#f["internalField"][i]
-    fid.write(str(val))
-    fid.write("\n")
-fid.close()
-
+# print "Parsing: "+fname
+#
+# f=ParsedParameterFile(fname)
+#
+# print "\nHeader:"
+# print f.header
+#
+# fid = open('testFile','w+')
+#
+# for i in f["internalField"]:
+#     val = i#f["internalField"][i]
+#     fid.write(str(val))
+#     fid.write("\n")
+# fid.close()
+#
 
 # fid = open('boundaryTest','w+')
 # patches = {"topWall","bottomWall","outlet","inlet"}

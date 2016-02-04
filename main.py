@@ -48,6 +48,7 @@ class Probe:
         self.num_probes =  num_probes # the offset is the number of probes readings contained in one file.
         raw = []
         if type == 'velocity':
+            print 'Reading velocity probe'
             offset = 0
             loc_offset = 0
             if self.num_probes == 0:
@@ -106,14 +107,40 @@ class Probe:
         print 'delta T = ', self.dt
 
 
-def getFFT(probe, type, show):
+def plotVelocity(probe):
+
+    L1 = probe.L
+    t1 = None
+    tStable = 0
+    t1 = probe.t[tStable:]
+
+    Ux = probe.Ux[tStable:]
+    Uy = probe.Uy[tStable:]
+    Uz = probe.Uz[tStable:]
+
+    py.figure(1)
+    py.title(probe.location)
+    py.subplot(211)
+    py.title(probe.location)
+    py.plot(t1, Ux, color='red', lw=1)
+    py.xlabel('Non-Dimensional t = tU/D')
+    py.ylabel('u-velocity')
+    py.subplot(212)
+    # py.title(probe.location)
+    py.plot(t1, Uy, color='blue', lw=1)
+    py.xlabel('Non-Dimensional t = tU/D')
+    py.ylabel('v-velocity')
+    # py.title(probe.location)
+    py.show()
+
+def getFFT(probe, type, show, fignum):
 
     fs = 1/probe.dt
     L = probe.L
     dataBar = None
     dataPrime = None
-    tStable = 250000
-
+    tStable = 0
+    L = L - tStable
     if type == 'force':
         dataBar = np.mean(probe.Cl[tStable:])
         dataPrime = probe.Cl[tStable:] - dataBar
@@ -126,20 +153,20 @@ def getFFT(probe, type, show):
     else:
         print 'Type ' + type + ' is either invalid or not yet implemented'
         exit(-1)
-    Z = np.fft.fft(dataPrime, L-tStable)
+    Z = np.fft.fft(dataPrime, L)
     Q = abs(Z)/probe.L
     halfQ = Q[0:L/2-1]
     dF = fs/L
     f = np.arange(0, fs, dF)
-    index = np.argmax(Q[0:probe.L/2 - 1])   # get absolute maxima
+    index = np.argmax(Q[0:L/2 - 1])   # get absolute maxima
     localMax = argrelmax(halfQ)             # get local maxima
     print 'Absolute Maxima at: ', f[index]
-    for j in range(10):
-        print 'Local Maxima at: ', f[localMax[0][j]]
+    # for j in range(20):
+    #     print 'Local Maxima at: ', f[localMax[0][j]]
 
     if show:
-        fig = py.figure()
-        py.plot(f[0:probe.L/2-1], Q[0:probe.L/2 -1], color='red', lw=1)
+        fig = py.figure(fignum)
+        py.plot(f[0:L/2-1], Q[0:L/2 -1], color='red', lw=1)
         py.xscale('log')
         py.yscale('log')
         py.xlabel('Frequency (Hz)')
@@ -160,7 +187,7 @@ def compareProbes(probe1,probe2):
     U2 = None
     t1 = None
     t2 = None
-    tStable = 250000
+    tStable = 300000
 
     if L1 < L2:
         L = L1
@@ -234,8 +261,32 @@ def compareFields(ppf1, ppf2):
 # load in probe
 fname = '/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/500/Umean'
 
+# probe1_1 = Probe('/Volumes/Data2/cases/Re500pMean/postProcessing/' + 'forces/0/forceCoeffs.dat', 'force', 0)
+# probe2_1 = Probe('/Volumes/Data2/cases/Re500Advective/postProcessing/' + 'forces/209.9/forceCoeffs.dat', 'force', 0)
+probe2_1 = Probe('/Volumes/Data2/cases/Re500Advective/postProcessing/' + 'probes2/209.9/U', 'velocity', 0)
+# probe2_2 = Probe('/Volumes/Data2/cases/Re500Advective/postProcessing/' + 'forces/209.9/forceCoeffs.dat', 'force', 0)
+# probe1_1 = Probe('/Volumes/Data2/cases/Re500pMean/postProcessing/' + 'probes2/0/U', 'velocity', 0)
+# probe1_2 = Probe('/Volumes/Data2/cases/Re500pMean/postProcessing/' + 'forces/0/forceCoeffs.dat', 'force', 0)
+probe1_1 = Probe('/Volumes/Data2/cases/Re500/postProcessing/' + 'probes2/510/U', 'velocity', 0)
+
+plotVelocity(probe1_1)
+plotVelocity(probe2_1)
+
+
+# getFFT(probe2_1,'Ux',True,1)
+# getFFT(probe2_1,'Uy',True,2)
+# getFFT(probe2_2,'force',True,3)
+# getFFT(probe2_1,'Ux',True)
+
+
+# probe2_1 = Probe('/Volumes/Data2/cases/Re100_NoWalls40D/postProcessing/' + 'forces/0/forceCoeffs_0.001.dat', 'force', 0)
+# probe1_1 = Probe('/Volumes/Data2/cases/Re100_NoWalls40D/postProcessing/' + 'probes1/0/U', 'velocity', 0)
+# probe2_1 = Probe('/Volumes/Data2/cases/Re100_NoWalls40DAdvective/postProcessing/' + 'probes1/519.9/U', 'velocity', 0)
+# plotVelocity(probe1_1)
+# plotVelocity(probe2_1)
+
 # probe1_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 0)
-probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 0)
+# probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 0)
 # probe1_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 1)
 # probe2_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes1/10/U', 'velocity', 1)
 # probe1_3 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes1/60/U', 'velocity', 2)
@@ -251,6 +302,9 @@ probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProce
 # probe13_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho0/postProcessing/' + 'probes3/60/U', 'velocity', 1)
 # probe23_2 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProcessing/' + 'probes3/10/U', 'velocity', 1)
 
+
+# plotVelocity(probe12_1)
+# plotVelocity(probe22_1)
 # compareProbes(probe1_1, probe2_1)
 # compareProbes(probe1_2, probe2_2)
 # compareProbes(probe1_3, probe2_3)
@@ -261,7 +315,7 @@ probe2_1 = Probe('/Volumes/Data2/cases/testCaseValidationRe100_nOrtho1/postProce
 # compareProbes(probe13_2, probe23_2)
 
 
-getFFT(probe2_1,'Ux',False)
+
 
 # print "Parsing: "+fname
 #
